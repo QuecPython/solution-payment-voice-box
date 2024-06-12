@@ -12,7 +12,7 @@ QuecPython云喇叭方案使用EventMesh框架开发，此文档主要描述云�
 
 Module侧支持SIM，GPIO，UART，AUDIO等功能
 
-![](/cloudspeaker/cloudspeaker_1.png)
+![](/media/cloudspeaker_1.png)
 
 ### 软件系统框架
 
@@ -22,7 +22,7 @@ Module侧支持SIM，GPIO，UART，AUDIO等功能
 2. EventMesh为事件处理器，通过支持事件订阅发布的机制来完成功能流转
 3. Module侧接收外部事件或数据通过EventMesh驱动来处理执行
 
-![](/cloudspeaker/cloudspeaker_2.png)
+![](/media/cloudspeaker_2.png)
 
 ### 功能组件
 
@@ -32,7 +32,7 @@ Module侧支持SIM，GPIO，UART，AUDIO等功能
 
 图中以云喇叭作为总对象，将云喇叭所依赖的功能对象联系到一起，核心的对象拥有哪些方法，依赖哪些功能类，具体如下图所示：
 
-![](/cloudspeaker/cloudspeaker_3.png)
+![](/media/cloudspeaker_3.png)
 
 ## 系统组件
 
@@ -70,12 +70,12 @@ EventMesh.publish("test_event", "TEST_OK")
 - 实现原理
 
 1.创建类方法会在该类初始化方法内完成audio功能的初始化，将原始音量等级简化成5个等级，方便使用。
-![](/cloudspeaker/cloudspeaker_4.png)
+![](/media/cloudspeaker_4.png)
 2.初始化类方法后将对外暴露的方法通过事件注册到EventMesh中，完成音量初始化设置。
-<img src="/cloudspeaker/cloudspeaker_5.png" alt="image-yunlaba" style="zoom:120%;" />
+<img src="/media/cloudspeaker_5.png" alt="image-yunlaba" style="zoom:120%;" />
 3.Audio播放音频文件接口 & TTS播放输入内容接口，通过QuecPython提供的audio API直接使用，API详细使用描述参考wiki文档。
-<img src="/cloudspeaker/cloudspeaker_6.png" alt="image-yunlaba" style="zoom:120%;" />
-<img src="/cloudspeaker/cloudspeaker_7.png" alt="image-yunlaba" style="zoom:120%;" />
+<img src="/media/cloudspeaker_6.png" alt="image-yunlaba" style="zoom:120%;" />
+<img src="/media/cloudspeaker_7.png" alt="image-yunlaba" style="zoom:120%;" />
 
 ### ConfigStoreManager
 
@@ -91,7 +91,7 @@ EventMesh.publish("test_event", "TEST_OK")
 2.  若文件已存在，则会比对默认参数有无新增，若有新增同步更新到配置文件
 3.  该类方法对外通过EventMesh注册读取和写入两个事件
 
-<img src="/cloudspeaker/cloudspeaker_8.png" alt="image-yunlaba" style="zoom:120%;" />
+<img src="/media/cloudspeaker_8.png" alt="image-yunlaba" style="zoom:120%;" />
 
 ### HistoryOrderManager
 
@@ -138,14 +138,14 @@ APN进行拨号请参考API手册进行修改，下面做简要描述
 - 实现原理
 
 1. 该类方法初始化时会等待设备注网完成，且注册网络变化回调函数，通过checkNet API返回值判断设备找网状态，找网成功后会通过事件发布的方式启动TCP连接，若找网失败则会尝试重新找网。
-<img src="/cloudspeaker/cloudspeaker_9.png" alt="image-yunlaba" style="zoom:120%;" />
+<img src="/media/cloudspeaker_9.png" alt="image-yunlaba" style="zoom:120%;" />
 
 2. 网络状态异常处理，当设备网络状态发生变化时我们可以通过注册回调的方式来通知到应用层，如下所示
-<img src="/cloudspeaker/cloudspeaker_10.png" alt="image-yunlaba" style="zoom:120%;" />
-<img src="/cloudspeaker/cloudspeaker_11.png" alt="image-yunlaba" style="zoom:120%;" />
+<img src="/media/cloudspeaker_10.png" alt="image-yunlaba" style="zoom:120%;" />
+<img src="/media/cloudspeaker_11.png" alt="image-yunlaba" style="zoom:120%;" />
 3. 网络状态出现异常重连的示例：
 网络异常后会先尝试使用Cfun切换来重新找网，若cfun失败可考虑重启模组，若需要做次数限制则通过配置文件记录一个值来控制。
-<img src="/cloudspeaker/cloudspeaker_12.png" alt="image-yunlaba" style="zoom:120%;" />
+<img src="/media/cloudspeaker_12.png" alt="image-yunlaba" style="zoom:120%;" />
 
 ### DeviceInfoManager
 
@@ -156,7 +156,7 @@ APN进行拨号请参考API手册进行修改，下面做简要描述
 - 实现原理
 
 类函数初始化时会将获取设备信息的函数注册成事件对外提供，可直接通过事件发布的方式使用。
-<img src="/cloudspeaker/cloudspeaker_13.png" alt="image-yunlaba" style="zoom:120%;" />
+<img src="/media/cloudspeaker_13.png" alt="image-yunlaba" style="zoom:120%;" />
 
 ### OtaManager
 
@@ -177,13 +177,13 @@ APN进行拨号请参考API手册进行修改，下面做简要描述
 - 实现原理
 
 1. 创建类方法会在类初始化方法内完成类属性的初始化，类属性包含连接云平台的三元组，保活时间等
-<img src="/cloudspeaker/cloudspeaker_14.png" alt="image-yunlaba" style="zoom:120%;" />
+<img src="/media/cloudspeaker_14.png" alt="image-yunlaba" style="zoom:120%;" />
 2. 初始化类方法后将对外暴露的方法通过事件注册到EventMesh中
-<img src="/cloudspeaker/cloudspeaker_15.png" alt="image-yunlaba" style="zoom:120%;" />
+<img src="/media/cloudspeaker_15.png" alt="image-yunlaba" style="zoom:120%;" />
 3. 发起连接请求
-<img src="/cloudspeaker/cloudspeaker_16.png" alt="image-yunlaba" style="zoom:120%;" />
+<img src="/media/cloudspeaker_16.png" alt="image-yunlaba" style="zoom:120%;" />
 4. 下行数据回调函数
-<img src="/cloudspeaker/cloudspeaker_17.png" alt="image-yunlaba" style="zoom:120%;" />
+<img src="/media/cloudspeaker_17.png" alt="image-yunlaba" style="zoom:120%;" />
 
 ### DeviceActionManager
 
@@ -194,9 +194,9 @@ APN进行拨号请参考API手册进行修改，下面做简要描述
 - 实现原理
 
 1. 初始化类方法后将对外暴露的方法通过事件注册到EventMesh中。
-<img src="/cloudspeaker/cloudspeaker_17.png" alt="image-yunlaba" style="zoom:120%;" />
+<img src="/media/cloudspeaker_17.png" alt="image-yunlaba" style="zoom:120%;" />
 2. 外部业务调用通过对应的事件主题来调用对应的功能接口
-<img src="/cloudspeaker/cloudspeaker_19.png" alt="image-yunlaba" style="zoom:120%;" />
+<img src="/media/cloudspeaker_19.png" alt="image-yunlaba" style="zoom:120%;" />
 
 ### RGBLight
 
@@ -291,10 +291,25 @@ def _write(flag, data):
 1.	云喇叭所有功能类进行初始化。
 2.	所有的类方法都会约定必须有初始化前后或实例化前后要完成的事件注册或功能处理，所以我们通过一个APP类将所有的类方法在装载时和start时会将每个类方法的初始化前后动作执行完。
 
-<img src="/cloudspeaker/cloudspeaker_21.png" alt="image-yunlaba" style="zoom:120%;" />
+<img src="/media/cloudspeaker_21.png" alt="image-yunlaba" style="zoom:120%;" />
 
 ## 业务流程
 
 云喇叭的主要业务流程在模组和云端的消息交互部分，比如云端下发播放指令、云端下发升级命令等
 
-<img src="/cloudspeaker/cloudspeaker_22.png" alt="image-yunlaba" style="zoom:200%;" />
+<img src="/media/cloudspeaker_22.png" alt="image-yunlaba" style="zoom:200%;" />
+
+## 运行教程
+
+代码运行教程参考readme
+
+### 模拟支付流程
+
+1. 在阿里云物联网平台创建产品，并在产品目录下创建设备，设备名称(DeviceName)为调试开发板的sn号
+
+2. 修改 `code/conf_store.json` 中的  product_key 和 product_secrt 为上一步中创建的设备的 ProductKey 和 ProductSecrt 参数
+
+3. 将修改后的 `code/conf_store.json` 下载到模组中后运行 `_main.py` 脚本
+
+4. 使用mqtt.fx向topic `{ProductKey}/{DeviceName}/user/task` 发布内容 {"broadcast_type":2,"money":"0.01","biz_type":2,"request_id":"99711180000202012162212481044206"}，其中money是播报的金额
+

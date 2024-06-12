@@ -17,7 +17,7 @@ class CloudManager(Abstract):
 
     def __init__(self):
         self.__server = " "   # mqtt服务器IP
-        self.__port = 1884
+        self.__port = 1883
         self.__mqtt_client = None
         self.product_key = ''  # 产品识别码
         self.product_secret = None  # 产品密钥
@@ -97,6 +97,7 @@ class CloudManager(Abstract):
         self.__mqtt_client.set_callback(self.callback)
         for key, values in self.sub.items():
             try:
+                print(values.format(self.product_key, self.device_name))
                 self.__mqtt_client.subscribe(values.format(self.product_key, self.device_name), qos=self.qos)
             except OSError as e:
                 self.log.warn("mqtt subscribe {} topic failed! error {}".format(key, e))

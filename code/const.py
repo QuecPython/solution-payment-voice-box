@@ -63,7 +63,7 @@ sub_map = {
     # "update":"/{}/{}/user/update",
     # "update-err":"/{}/{}/user/update/error",
     # "get":"/{}/{}/user/get",
-    "ota": "/ota/{}/{}/user/task",    # pk dn
+    "ota": "{}/{}/user/task",    # pk dn
 }
 pub_map = {
     # "message":"/{}/{}/user/message",
