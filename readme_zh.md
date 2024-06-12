@@ -53,7 +53,7 @@ QuecPython推出的云喇叭解决方案主要针对移动支付行业，包括�
    cd solution-payment-voice-box
    ```
 
-2. **烧录固件**： 按照[说明](https://python.quectel.com/doc/Application_guide/dev-tools/QPYcom/qpycom-dw.html#Download-Firmware)将固件烧录到开发板上。**注意在下载固件的时候需要选择EXTFS8M型号**
+2. **烧录固件**： 按照[说明](https://python.quectel.com/doc/Application_guide/dev-tools/QPYcom/qpycom-dw.html#Download-Firmware)将固件烧录到开发板上。**注意根据开发板类型选择对应的固件**
 
 ### 运行应用程序
 
