@@ -1,46 +1,45 @@
-# QuecPython云喇叭软件使用指导
+# QuecPython Cloud Speaker Software Usage Guide
 
-## 概述
+## overview
 
-QuecPython云喇叭方案使用EventMesh框架开发，此文档主要描述云喇叭软件设计框架,包含核心组件功能描述，系统初始化流程的介绍等，方便更快理解本框架，并且介绍使用QuecPython完整运行云喇叭软件框架，包括相应配置项该如何配置以及如何基于该demo进行二次开发等
+The QuecPython cloud speaker solution is developed using the EventMesh framework. This document mainly describes the design framework of the cloud speaker software, including the function descriptions of core components, the introduction of the system initialization process, and more, to facilitate a quicker understanding of this framework. It also introduces how to fully run the cloud speaker software framework using QuecPython, including how to configure relevant configuration items and how to perform secondary development based on this demo.
 
-## 系统框架
+## System Framework
 
-### 硬件系统框架
+### Hardware System Framework
 
-硬件系统框架如下：
+The hardware system framework is as follows:
 
-Module侧支持SIM，GPIO，UART，AUDIO等功能
+The Module side supports SIM, GPIO, UART, AUDIO, and other functions.
 
 ![](media/cloudspeaker_1.png)
 
-### 软件系统框架
+### Software System Framework
 
-软件系统框架如下:
+The software system framework is as follows:
 
-1. APP层实现处理云喇叭核心业务，解析上下行数据（交易数据、OTA、其他业务数据等）
-2. EventMesh为事件处理器，通过支持事件订阅发布的机制来完成功能流转
-3. Module侧接收外部事件或数据通过EventMesh驱动来处理执行
+1. The APP layer implements the core business processing of the cloud speaker, parsing upstream and downstream data (transaction data, OTA, other business data, etc.).
+2. EventMesh acts as an event processor, completing functional flow through the mechanism of supporting event subscription and publishing.
+3. The Module side processes and executes external events or data received through EventMesh.
 
 ![](media/cloudspeaker_2.png)
 
-### 功能组件
+### Functional Components
+Component object relationship description:
 
-组件对象关系描述:
+The diagram below depicts the dependency and inheritance relationships between various component objects in the project software code. Each component object forms the business components of the cloud speaker.
 
-下图用于描绘项目软件代码中各组件对象之间的依赖关系与继承关系，各个组件对象为云喇叭的业务组件构成
-
-图中以云喇叭作为总对象，将云喇叭所依赖的功能对象联系到一起，核心的对象拥有哪些方法，依赖哪些功能类，具体如下图所示：
+The diagram shows the cloud speaker as the main object, linking the functional objects it relies on, detailing the core object's methods, and the functional classes it depends on, as shown below:
 
 ![](media/cloudspeaker_3.png)
 
-## 系统组件
+## System Components
 
 ### EventMesh
 
-服务和驱动通过EventMesh进行数据通信, 所有的Event都是从EventStore里面过来的, 服务提供方将接口和topic注册到EventMesh中，服务调用方通过topic从EventMesh中调用对应的接口，通过以上订阅和发布事件（topic）的行为来代替直接调用函数，不同业务之间的消息流转都通过EventMesh来完成
+Services and drivers communicate data through EventMesh. All events come from EventStore. Service providers register interfaces and topics in EventMesh, and service callers call corresponding interfaces from EventMesh through topics. This behavior of subscribing and publishing events (topics) replaces direct function calls, with message flows between different businesses completed through EventMesh.
 
-订阅事件：
+Subscribe to events:
 
 ```python
 from usr import EventMesh
@@ -48,14 +47,14 @@ from usr import EventMesh
 def test(event, msg):
 	return msg
 
-# 订阅事件
+# Subscribe to events
 EventMesh.subscribe("test_event", test)
 ```
 
-发布事件：
+Publish events：
 
 ```python
-# 发布事件
+# Publish events
 EventMesh.publish("test_event", "TEST_OK")
 ```
 
@@ -63,49 +62,123 @@ EventMesh.publish("test_event", "TEST_OK")
 
 ### AudioManager
 
-- 功能描述
+- Function Description
+Controls the device's audio output, including TTS voice broadcast, audio file playback, audio volume setting, etc.
 
-控制设备音频输出，包含TTS语音播报，音频文件播放，音频音量设置等功能。
+- Implementation Principle
 
-- 实现原理
+1. The class initialization method completes the initialization of audio functions, simplifying the original volume levels into five levels for ease of use.
 
-1.创建类方法会在该类初始化方法内完成audio功能的初始化，将原始音量等级简化成5个等级，方便使用。
-![](media/cloudspeaker_4.png)
-2.初始化类方法后将对外暴露的方法通过事件注册到EventMesh中，完成音量初始化设置。
-<img src="media/cloudspeaker_5.png" alt="image-yunlaba" style="zoom:120%;" />
-3.Audio播放音频文件接口 & TTS播放输入内容接口，通过QuecPython提供的audio API直接使用，API详细使用描述参考wiki文档。
-<img src="media/cloudspeaker_6.png" alt="image-yunlaba" style="zoom:120%;" />
-<img src="media/cloudspeaker_7.png" alt="image-yunlaba" style="zoom:120%;" />
+
+```python
+class AudioManager(Abstract):
+    """
+    Audio file playback
+    TTS Broadcast Management (Splicing)
+    """
+
+    def __init__(self):
+        self.__audio = audio.Audio(0)
+        self.__audio_volume = 3
+        self.__tts_priority = 3
+        self.__tts_break_in = 0
+        self.__audio_mode = ""
+        self.__speak_en_pin = None
+        self.__volume_level = {
+            1: 1,
+            2: 3,
+            3: 6,
+            4: 9,
+            5: 11
+        }
+```
+
+2.After initializing the class method, the methods exposed to the outside are registered to EventMesh to complete the volume initialization settings.
+
+```python
+	def post_processor_after_initialization(self):
+        self.__set_audio_pa() # set pa
+        self.__audio_volume = publish("persistent_config_get", "volume")
+        self.__audio_mode = publish("persistent_config_get", "audio_mode")
+        if not self.__audio_volume:
+            self.__audio_volume = 5
+        # set TTS volume
+        self.__audio.setVolume(self.__volume_level.get(self.__audio_volume))
+		# Interface registration for exposing functions to the outside world
+        subscribe("audio_file_play", self.audio_file_play)
+        subscribe("number_play", self.number_play)
+        subscribe("audio_bat_play", self.audio_bat_play)
+        subscribe("audio_play_stop", self.audio_play_stop)
+        subscribe("get_audio_state", self.get_audio_state)
+        subscribe("add_audio_volume", self.add_audio_volume)
+        subscribe("reduce_audio_volume", self.reduce_audio_volume)
+```
+
+3. Audio Interface for playing audio files & TTS interface for playing input content. It is directly used through the audio API provided by QuecPython. For details about how to use the API, see the wiki documentation.
+
+```python
+	def audio_play(self, topic=None, filename=None):
+        """Play audio"""
+        if filename is None:
+            return
+        # Set priority and interrupt mode
+        state = self.__audio.play(self.__tts_priority, self.__tts_break_in, filename)
+        return True if state == 0 else False
+
+    def number_play(self, topic=None, content=None):
+        """Play tts number"""
+        if content is None:
+            return
+        self.__audio_lib_play(content, self.__MERGE_MP3_FILE, self.amount_data)
+```
+
+
 
 ### ConfigStoreManager
 
-配置文件管理模块主要用于处理设备参数持久化保存，提供参数读取于参数更新的方法，通过该方法与模组文件系统交互
+The configuration file management module is mainly used to deal with the persistent storage of device parameters, provide the method of parameter reading and parameter updating, and interact with the module file system through this method
 
-- 功能描述
+- Function Description
 
-配置文件一般读、写两个接口,在业务的各个部分中都有读取和写入的需求,所以为了让业务模块可以调用到这两个接口，在业务模块初始化之前就需要初始化配置文件管理模块 
+Configuration files generally read and write two interfaces, in all parts of the service have read and write requirements, so in order to enable the service module to call the two interfaces, before the service module initialization need to initialize the configuration file management module
 
-- 实现原理
+- Implementation principle
 
-1.  初始化类方法时会判断配置文件是否存在，不存在则创建一个JSON文件，文件创建成功后将默认参数写入文件中。
-2.  若文件已存在，则会比对默认参数有无新增，若有新增同步更新到配置文件
-3.  该类方法对外通过EventMesh注册读取和写入两个事件
+1. If the configuration file does not exist, a JSON file is created. After the file is created, default parameters are written into the file.
+2. If the file already exists, the system compares whether default parameters are added. If new parameters are added, update them to the configuration file
+3. This method reads and writes two events through EventMesh registration
 
-<img src="media/cloudspeaker_8.png" alt="image-yunlaba" style="zoom:120%;" />
+```python
+def post_processor_after_initialization(self):
+        if ql_fs.path_exists(self.file_name):  # Check whether the file exists
+            file_map = ql_fs.read_json(self.file_name)
+            # Compare whether parameters are added. 
+            # If any parameters are added, synchronize them to the file
+            for k in self.map.keys():
+                if k not in file_map:
+                    file_map.update({k: self.map.get(k)})
+            self.__store(msg=file_map)
+            self.map = file_map
+        else:
+            self.__store()
+        subscribe("persistent_config_get", self.__read)
+        subscribe("persistent_config_store", self.__store)
+```
 
 ### HistoryOrderManager
 
-历史订单管理模块，用于历史订单消息的写入和读取
+History order management module for writing and reading history order messages
 
-- 功能描述
+- Function Description
 
-当有交易发生时写入订单信息，当有历史订单播放请求时查询订单信息
+Write order information when there is a transaction, and query order information when there is a historical order play request
 
-- 实现原理
+- Implementation principle
 
-1.  配置文件一般读写两个接口,在业务的各个部分中都有读取和写入的需求,所以需要让业务模块可以调用到这两个接口。
-2.  检测是否已经有历史订单配置文件，有则追加写入，无则创建后再写入订单数据
-3.  该类方法对外通过EventMesh注册读取和写入以及退出事件
+1. The configuration file generally reads and writes two interfaces. Each part of the service requires reading and writing. Therefore, the service module must be able to call the two interfaces.
+2. Check whether there is a history order configuration file. If yes, add to it. If no, create and write the order data
+3. This method registers read, write, and exit events through EventMesh
+
 ```python
 class HistoryOrderManager(Abstract):
     def __init__(self, max_hist_num=10):
@@ -129,105 +202,263 @@ class HistoryOrderManager(Abstract):
 
 ### LteNetManager
 
-- 功能描述
+- Function Description
 
-该功能主要用于模组网络初始化以及网络状态管理，设备默认为自动拨号注网，如需调整为手动拨号或者需要使用设置的
+This function is mainly used for module network initialization and network status management. The device uses automatic dialing by default. If you need to adjust it to manual dialing or use the Settings
 
-APN进行拨号请参考API手册进行修改，下面做简要描述
+For details about how to modify APN dial-up, refer to the API manual
 
-- 实现原理
+- Implementation principle
 
-1. 该类方法初始化时会等待设备注网完成，且注册网络变化回调函数，通过checkNet API返回值判断设备找网状态，找网成功后会通过事件发布的方式启动TCP连接，若找网失败则会尝试重新找网。
-<img src="media/cloudspeaker_9.png" alt="image-yunlaba" style="zoom:120%;" />
+1. When initializing the method, the device waits for the completion of network annotation, registers the network change callback function, and determines the device's network finding status by using the checkNet API return value. After the network finding is successful, the TCP connection is started by means of event announcement.
 
-2. 网络状态异常处理，当设备网络状态发生变化时我们可以通过注册回调的方式来通知到应用层，如下所示
-<img src="media/cloudspeaker_10.png" alt="image-yunlaba" style="zoom:120%;" />
-<img src="media/cloudspeaker_11.png" alt="image-yunlaba" style="zoom:120%;" />
-3. 网络状态出现异常重连的示例：
-网络异常后会先尝试使用Cfun切换来重新找网，若cfun失败可考虑重启模组，若需要做次数限制则通过配置文件记录一个值来控制。
-<img src="media/cloudspeaker_12.png" alt="image-yunlaba" style="zoom:120%;" />
+  ```python
+  	def wait_connect(self, timeout):
+          """Wait for the device to find the network"""
+          self.log.info("wait net -----------")
+          stagecode, subcode = self.check_net.wait_network_connected(timeout)
+          if stagecode == 3 and subcode == 1:
+              # Net injection success
+              publish("audio_file_play", "DEVICE_NET_OK")
+              publish("set_4g_wifi", 0)
+              self.log.info("module net success, run mqtt connect")
+              if publish('mqtt_connect'):
+                  publish("audio_file_play", "DEVICE_SERVER_OK")
+              else:
+                  publish("audio_file_play", "DEVICE_SERVER_FAILED")
+              self.net_error_audio_stop()
+        	else:
+              # Net injection failure
+              self.__net_error_mode = 1
+              self.log.error("module net fail, wait try again")
+              self.net_error_audio_start()
+              publish("audio_file_play", "DEVICE_NET_FAILED")
+              self.net_fail_process()
+          self.__data_call.setCallback(self.net_state_cb)  # Register a network callback
+  ```
+
+2. When the network status changes, we can register a callback to notify the application layer, as shown in the following figure
+
+  ```python
+  	def net_state_cb(self, args):
+          """The callback function is triggered when the network status changes"""
+          nw_sta = args[1]
+          if nw_sta == 1:
+              publish("audio_file_play", "DEVICE_NET_OK")
+              self.log.info("network connected!")
+              self.net_error_audio_stop()
+          else:
+              self.net_error_audio_start()
+              publish("audio_file_play", "DEVICE_NET_FAILED")
+              self.log.info("network not connected!")
+  ```
+
+3. Example of abnormal network reconnection:
+If the network is abnormal, it will try to use Cfun switch to find the network again. If cfun fails, it can consider restarting the module. If the number of times needs to be limited, it will be controlled by recording a value in the configuration file.
+
+  ```python
+  	def net_fail_process(self):
+          # If Cfun fails, try to find the network again. If Cfun fails, the module restarts
+          state = net.setModemFun(0)
+          if state == -1:
+              self.log.error("cfun net mode error, device will restart.")
+              utime.sleep(5)
+              # Power.powerRestart()
+          state = net.setModemFun(1)
+          if state == -1:
+              self.log.error("cfun net mode error, device will restart.")
+              utime.sleep(5)
+              # Power.powerRestart()
+          self.log.info("cfun net mode success, note the net again")
+          self.wait_connect(30)
+  ```
+
 
 ### DeviceInfoManager
 
-- 功能描述
+- Function Description
 
-该功能用于获取设备的一些基础信息，例如设备IMEI，SIM card的ICCID，固件、软件的版本号，信号值等。
+This function is used to obtain some basic information of the device, such as the IMEI of the device, ICCID of the SIM card, firmware, software version number, signal value, and so on.
 
-- 实现原理
+- Implementation principle
 
-类函数初始化时会将获取设备信息的函数注册成事件对外提供，可直接通过事件发布的方式使用。
-<img src="media/cloudspeaker_13.png" alt="image-yunlaba" style="zoom:120%;" />
+During class function initialization, the function that obtains device information is registered as an event and can be used by event publishing.
+
+```python
+def post_processor_after_instantiation(self):
+        # Register event
+        subscribe("get_sim_iccid", self.get_iccid)
+        subscribe("get_device_imei", self.get_imei)
+        subscribe("get_fw_version", self.get_device_fw_version)
+        subscribe("get_csq", self.get_csq)
+        subscribe("get_sn", self.get_sn)
+```
 
 ### OtaManager
 
-- 功能描述
+- Function Description
 
-该功能用于对APP应用程序代码通过远程升级更新，目前接口提供文件下载解压升级流程，OTA升级只需通过EventMesh或者直接调用接口即可
+This function is used to update the APP application code through remote upgrade. Currently, the interface provides the file download and decompression upgrade process. OTA upgrade only needs to be done through EventMesh or directly by invoking the interface
 
-- 实现原理
+- Implementation principle
 
-通过事件发布的方式调用升级方法，触发升级任务可以通过云平台下发或者TCP主动查询版本触发，下载完成后设备会重启完成升级
+The upgrade method is invoked through event publishing. The upgrade task can be delivered through the cloud platform or triggered by TCP active version query. After the download is complete, the device restarts to complete the upgrade
 
-### AliYunManage
+After the OTA file is successfully downloaded, decompress it to the fota partition, restart the device, and upgrade successfully.
 
-- 功能描述
+```python
+		if download_result == 0:
+            app_fota_download.app_fota_pkg_mount.mount_disk()
+            fd = FileDecode(tar_src, parent_dir=app_fota_download.get_updater_dir())
+            fd.unzip()
+            stat = fd.unpack()
+            if stat:
+                uos.remove(tar_src)
+                fd.update_stat()
+                fd.set_flag()
+                # Power...RESTART
+                print("Decompress the package success")
+            else:
+                print("Decompress the package failed")
+                download_result = 1
+```
 
-该模块功能用于将设备通过MQTT协议连接到阿里云IOT平台，提供连接，断开连接，数据上下行等功能。
 
-- 实现原理
 
-1. 创建类方法会在类初始化方法内完成类属性的初始化，类属性包含连接云平台的三元组，保活时间等
-<img src="media/cloudspeaker_14.png" alt="image-yunlaba" style="zoom:120%;" />
-2. 初始化类方法后将对外暴露的方法通过事件注册到EventMesh中
-<img src="media/cloudspeaker_15.png" alt="image-yunlaba" style="zoom:120%;" />
-3. 发起连接请求
-<img src="media/cloudspeaker_16.png" alt="image-yunlaba" style="zoom:120%;" />
-4. 下行数据回调函数
-<img src="media/cloudspeaker_17.png" alt="image-yunlaba" style="zoom:120%;" />
+### CloudManage
+
+- Function Description
+
+The module function is used to connect the device to the IOT platform through the MQTT protocol (taking Alibaba Cloud as an example), providing connection, disconnection, data uplink and downlink and other functions.
+
+- Implementation principle
+
+1. Creating a class method will initialize the class attributes in the class initialization method, including triples connected to the cloud platform, and the retention time
+
+  ```python
+  class CloudManager(Abstract):
+      """
+      MQTT interface
+      """
+  
+      def __init__(self):
+          self.__server = " "   # mqtt broker IP
+          self.__port = 1883
+          self.__mqtt_client = None
+          self.product_key = ''  # product key
+          self.product_secret = None  # product secret
+          self.device_name = ''  # device name (SN)
+          self.device_secret = ''  # device secret
+          self.client_id = ''  # client_id (SN)
+          self.password = ""  # passwd
+          self.clean_session = True  # Client type (False: persistent client, True: temporary)
+          self.keep_alive = 300  # Maximum communication time allowed (s)
+          self.sub_topic = ''  # Subscription address
+          self.qos = 1  # Message Quality of Service 0: The sender sends the message only once and does not retry 1: The sender sends the message at least once to ensure that the message reaches the Broker
+          self.conn_flag = False
+          self.start_mqtt_flag = False
+  ```
+
+2. After initializing class methods, the exposed methods are registered to the EventMesh through events
+  ```python
+  def post_processor_after_initialization(self):
+          subscribe("mqtt_connect", self.__start_mqtt_connect)
+  ```
+
+3. Initiate a connection request
+
+  ```python
+  def __connect(self, topic=None, data=None):
+          if not self.__check_connect_param():
+              return False
+          if not self.conn_flag:
+              self.conn_flag = True
+          self.__mqtt_client = MQTTClient(self.client_id, self.__server, port=self.__port, user=self.device_name,password=self.password, keepalive=120, ssl=False, ssl_params={}, reconn=True)
+          try:
+              con_state = self.__mqtt_client.connect()
+          except ValueError as e:
+              con_state = 1
+              self.log.info("connect  error --{}".format(e))
+  ```
+
+4. Downlink data callback function
+
+
+  ```python
+  def callback(self, topic, msg):
+          """mqtt msg callback"""
+          return self.__customer_sub(topic, msg)
+          # After receiving the cloud platform message, the message is sent to the queue for execution
+  ```
+
 
 ### DeviceActionManager
 
-- 功能描述
+- Function Description
 
-此模块用于设备状态控制，可以控制设备开关机，重启，待机状态，以及外设控制等。
+This module is used for device status control, which can control the device on/off, restart, standby state, and peripheral control.
 
-- 实现原理
+- Implementation principle
 
-1. 初始化类方法后将对外暴露的方法通过事件注册到EventMesh中。
-<img src="media/cloudspeaker_17.png" alt="image-yunlaba" style="zoom:120%;" />
-2. 外部业务调用通过对应的事件主题来调用对应的功能接口
-<img src="media/cloudspeaker_19.png" alt="image-yunlaba" style="zoom:120%;" />
+1. After class methods are initialized, the exposed methods are registered with EventMesh through events.
+
+  ```python
+   def post_processor_after_initialization(self):
+          # Register event
+          subscribe("device_start", self.device_start)
+          subscribe("device_shutdown", self.device_shutdown)
+          subscribe("device_restart", self.device_restart)
+  ```
+
+2. External service invocation invokes the corresponding function interface through the corresponding event topic
+	```python
+   def device_shutdown(self, topic=None, data=None):
+        # device shutdown
+        # publish("audio_play", AUDIO_FILE_NAME.DEVICE_SHUTDOWN)
+        pass
+        utime.sleep(5)
+        Power.powerDown()
+
+    def device_start(self, topic=None, data=None):
+        # device start
+        # publish("audio_play", AUDIO_FILE_NAME.DEVICE_START)
+        pass
+
+    def device_restart(self, topic=None, data=None):
+        # device restart
+        Power.powerRestart()
+  ```
+  
 
 ### RGBLight
 
-- 功能描述
+- Function Description
 
-该模块用于设备Led灯状态管理，通过GPIO使能控制Led的开关和闪烁动作。
+The module is used to manage the Led light status of the device, and control the switching and blinking action of the Led by enabling GPIO.
 
-- 实现原理
+- Implementation principle
 
-1. 创建类方法会在__init__内完成类属性的初始化和led灯GPIO管脚的初始化。
+1. Creating a class method will complete the initialization of the class properties and the initialization of the led light GPIO pin in __init__.
 ```python
 def post_processor_after_initialization(self):
-	"""订阅此类所有的事件到 EventMesh中"""
 	subscribe("light_enable", self.light_enable)
 	subscribe("light_switch", self.switch)
 	subscribe("light_blink", self.blink)
 	subscribe("blink_close", self.close)
 ```
-2. 初始化类方法后将对外暴露的方法通过事件注册到EventMesh中
+2. After class methods are initialized, the exposed methods are registered with EventMesh through events
 
 ### LcdManager
 
-- 功能描述
+- Function Description
 
-该模块用于设备屏幕显示内容刷新、显示状态管理，通过GPIO使能控制LCD的背光和模拟SPI通讯驱动屏幕。
+This module is used for device screen display content refresh, display status management, control LCD backlight and analog SPI communication driver screen through GPIO enable.
 
-- 实现原理
+- Implementation principle
 
-1. 创建类方法会在__init__内完成类属性的初始化和屏幕显示缓存的定义，包括刷新时间的定时器、屏幕显示缓存对应显示区域的下标
+1. Create a class method in __init__ to complete the initialization of the class properties and the definition of the screen cache, including the timer of the refresh time and the subscript of the screen cache corresponding to the display area
 
-2. 初始化类方法后将对外暴露的方法通过事件注册到EventMesh中
+2. After class methods are initialized, the exposed methods are registered with EventMesh through events
 
 ```python
 def post_processor_after_initialization(self):
@@ -237,8 +468,8 @@ def post_processor_after_initialization(self):
    subscribe("set_time", self._set_time)
    subscribe("set_count", self._set_count)
 ```
-3. 对外提供的接口包括设置电池、信号、金额、笔数、时间等
-4. 屏幕刷新原理使用三路GPIO来模拟三线SPI通讯驱动屏幕
+3. The external interface includes setting the battery, signal, amount, number of transactions, and time
+4. Screen refresh principle Using three-way GPIO to simulate three-line SPI communication driver screen
 
 ```python
 def _write(flag, data):
@@ -256,17 +487,18 @@ def _write(flag, data):
 
 ### MenuManager
 
-- 功能描述
+- Function Description
 
-菜单管理，该模块用于管理按键功能的映射关系，将对应按键的对应触发模式映射到对应的功能
+Menu management: This module is used to manage the mapping relationship of key functions and map the corresponding trigger mode of the corresponding key to the corresponding function
 
-- 实现原理
+- Implementation principle
 
-1. 初始化通过按键API注册按键的单击双击和长按事件，并通过队列和消息发布机制将事件统一输出到菜单管理模块
+1. Initialize the button API to register the click, double-click and long press events, and output the events to the menu management module through the queue and message publishing mechanism
 
-2. menu注册两个对外接口分别为按键事件和菜单事件，按键事件是按键对应的功能，菜单事件是对应切换菜单产生的事件
+2. menu registers two external interfaces: key event and menu event. Key event is the function corresponding to a key, and menu event is the event generated by switching the menu
 
-3. 通过定义菜单配置表来实现菜单功能的切换和自定义配置
+3. You can switch menu functions and customize menu configurations by defining menu configuration tables
+
 ```python
 "BaseMenu":
         {
@@ -285,31 +517,22 @@ def _write(flag, data):
         },
 ```
 
-## 系统初始化流程
+## System Initialization Process
+Explanation of the system initialization process:
 
-系统初始化流程说明：
-1.	云喇叭所有功能类进行初始化。
-2.	所有的类方法都会约定必须有初始化前后或实例化前后要完成的事件注册或功能处理，所以我们通过一个APP类将所有的类方法在装载时和start时会将每个类方法的初始化前后动作执行完。
-
+1. Initialize all functional classes of the cloud speaker.
+2. All class methods must agree to complete event registration or functional processing before and after initialization or instantiation. Therefore, we use an APP class to execute the actions before and after the initialization of each class method during loading and start.
 <img src="media/cloudspeaker_21.png" alt="image-yunlaba" style="zoom:120%;" />
 
-## 业务流程
+## Business Process
+The main business process of the cloud speaker involves the interaction between the module and the cloud, such as the cloud issuing play instructions, issuing upgrade commands, etc.
 
-云喇叭的主要业务流程在模组和云端的消息交互部分，比如云端下发播放指令、云端下发升级命令等
 
-<img src="media/cloudspeaker_22.png" alt="image-yunlaba" style="zoom:200%;" />
+## Running Tutorial
+Refer to the readme for the code running tutorial.
 
-## 运行教程
-
-代码运行教程参考readme
-
-### 模拟支付流程
-
-1. 在阿里云物联网平台创建产品，并在产品目录下创建设备，设备名称(DeviceName)为调试开发板的sn号
-
-2. 修改 `code/conf_store.json` 中的  product_key 和 product_secrt 为上一步中创建的设备的 ProductKey 和 ProductSecrt 参数
-
-3. 将修改后的 `code/conf_store.json` 下载到模组中后运行 `_main.py` 脚本
-
-4. 使用mqtt.fx向topic `{ProductKey}/{DeviceName}/user/task` 发布内容 {"broadcast_type":2,"money":"0.01","biz_type":2,"request_id":"99711180000202012162212481044206"}，其中money是播报的金额
-
+### Simulated Payment Process
+1. Create a product on the Alibaba Cloud IoT platform, and create a device under the product directory. The device name (DeviceName) is the SN number of the debugging development board.
+2. Modify the code/conf_store.json to include the product_key and product_secret of the device created in the previous step.
+3. Download the modified code/conf_store.json to the module and run the _main.py script.
+4. Use mqtt.fx to publish content to the topic {ProductKey}/{DeviceName}/user/task with the message {"broadcast_type":2,"money":"0.01","biz_type":2,"request_id":"99711180000202012162212481044206"}, where money is the amount to be broadcasted.
