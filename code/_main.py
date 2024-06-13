@@ -26,7 +26,7 @@ class App(object):
 
 if __name__ == '__main__':
     app = App()
-    # app 注册
+    # app initialization
 
     app.append_manager(ConfigStoreManager())
     app.append_manager(AudioManager())
@@ -40,5 +40,5 @@ if __name__ == '__main__':
     app.append_manager(ChargeManager())
     app.append_manager(MenuManager())
 
-    # 启动
+    # start
     app.start()

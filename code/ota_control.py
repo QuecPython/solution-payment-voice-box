@@ -10,7 +10,7 @@ import utime
 
 
 class FileDecode(object):
-    """整包升级"""
+    """Package upgrade"""
 
     def __init__(self, zip_file, parent_dir="/fota/usr/"):
         self.data = b''
@@ -23,7 +23,7 @@ class FileDecode(object):
         return self.update_file_list
 
     def unzip(self):
-        """缓存到内存中"""
+        """Cache to memory"""
         self.fp.seek(10)
         self.fileData = zlib.DecompIO(self.fp, -15)
 
@@ -33,7 +33,7 @@ class FileDecode(object):
 
     @classmethod
     def file_size(cls, data):
-        """获取真实size数据"""
+        """Get the real size data"""
         size = cls._ascii_trip(data)
         if not len(size):
             return 0
@@ -41,7 +41,7 @@ class FileDecode(object):
 
     @classmethod
     def get_file_name(cls, file_name):
-        """获取文件名称"""
+        """Get file name"""
         return cls._ascii_trip(file_name)
 
     def get_data(self):
@@ -108,7 +108,7 @@ tar_src = "/usr/YM.zip"
 
 
 class Upgrade(object):
-    """OTA升级"""
+    """OTA upgrade"""
 
     def __init__(self, url, version):
         self.fota_obj = fota(reset_disable=1)
@@ -117,11 +117,10 @@ class Upgrade(object):
         self.app_update()
 
     def app_update(self):
-        # 升级软件接口
+        # Upgrade software interface
         resp = request.get(self.url)
         fp = open(tar_src, 'wb+')
         content = resp.content
-        print("开始整包写入下载文件")
         try:
             while True:
                 c = next(content)
@@ -137,7 +136,7 @@ class Upgrade(object):
             resp.close()
             uos.remove(tar_src)
             download_result = 1
-        print("http下载升级文件结果为:{}".format(download_result))
+        print("The result of http downloading the upgrade file is:{}".format(download_result))
         if download_result == 0:
             app_fota_download.app_fota_pkg_mount.mount_disk()
             fd = FileDecode(tar_src, parent_dir=app_fota_download.get_updater_dir())
@@ -147,20 +146,19 @@ class Upgrade(object):
                 uos.remove(tar_src)
                 fd.update_stat()
                 fd.set_flag()
-                # Power...RESTART 操作
-                print("整包解压缩success")
+                # Power...RESTART
+                print("Decompress the package success")
             else:
-                print("整包解压缩failed")
+                print("Decompress the package failed")
                 download_result = 1
-        print("开始上报升级状态")
+        print("The system starts reporting the upgrade status")
         if download_result == 0:
             self.update_stat(download_result)
         else:
             self.update_stat(download_result)
 
     def update_stat(self, result_code):
-        """上报升级状态"""
+        """reporting the upgrade status"""
         publish("persistent_config_store", {"ota": result_code, "firmware_version": self.version})
-        # TODO 上报成功参数 待定
         utime.sleep(5)
         Power.powerRestart()

@@ -34,7 +34,7 @@ class HistoryOrderManager(Abstract):
 
     def __read(self, event, msg):
         """
-        params : 0 上一笔  1 下一笔
+        params : 0 Previous  1 Next 
         """
         with self.lock:
             order_len = len(self.map.get("order"))
@@ -71,7 +71,7 @@ class HistoryOrderManager(Abstract):
 
 
 class DeviceInfoManager(Abstract):
-    """设备信息管理"""
+    """DeviceInfoManager"""
 
     def __init__(self):
         self.__iccid = ""
@@ -81,7 +81,7 @@ class DeviceInfoManager(Abstract):
         self.log = get_logger(__name__ + "." + self.__class__.__name__)
 
     def post_processor_after_instantiation(self):
-        # 注册事件
+        # Register event
         subscribe("get_sim_iccid", self.get_iccid)
         subscribe("get_device_imei", self.get_imei)
         subscribe("get_fw_version", self.get_device_fw_version)
@@ -89,7 +89,7 @@ class DeviceInfoManager(Abstract):
         subscribe("get_sn", self.get_sn)
 
     def get_iccid(self, event=None, msg=None):
-        """查询 ICCID"""
+        """query ICCID"""
         if self.__iccid == "":
             msg = sim.getIccid()
             if msg != -1:
@@ -99,24 +99,24 @@ class DeviceInfoManager(Abstract):
         return self.__iccid
 
     def get_imei(self, event=None, msg=None):
-        """查询 IMEI"""
+        """query IMEI"""
         if self.__imei == "":
             self.__imei = modem.getDevImei()
         return self.__imei
 
     def get_device_fw_version(self, event=None, msg=None):
-        """查询 固件版本"""
+        """query firmware version"""
         if self.__fw_version == "":
             self.__fw_version = modem.getDevFwVersion()
         return self.__fw_version
 
     @staticmethod
     def get_csq(self, event=None, msg=None):
-        """查询 信号值"""
+        """query csq"""
         return net.csqQueryPoll()
 
     def get_sn(self, event=None, msg=None):
-        """查询SN"""
+        """query SN"""
         if self.__sn == "":
             self.__sn = modem.getDevSN()
         return self.__sn
@@ -124,7 +124,7 @@ class DeviceInfoManager(Abstract):
 
 class DeviceActionManager(Abstract):
     """
-    设备行为
+    DeviceActionManager
     """
 
     def __init__(self):
@@ -134,32 +134,32 @@ class DeviceActionManager(Abstract):
         self.log = get_logger(__name__ + "." + self.__class__.__name__)
 
     def post_processor_after_initialization(self):
-        # 注册事件
+        # Register event
         subscribe("device_start", self.device_start)
         subscribe("device_shutdown", self.device_shutdown)
         subscribe("device_restart", self.device_restart)
 
     def device_shutdown(self, topic=None, data=None):
-        # 设备关机
+        # device shutdown
         # publish("audio_play", AUDIO_FILE_NAME.DEVICE_SHUTDOWN)
         pass
         utime.sleep(5)
         Power.powerDown()
 
     def device_start(self, topic=None, data=None):
-        # 设备开机
+        # device start
         # publish("audio_play", AUDIO_FILE_NAME.DEVICE_START)
         pass
 
     def device_restart(self, topic=None, data=None):
-        # 设备重启
+        # device restart
         Power.powerRestart()
 
 
 class ChargeManager(Abstract):
     """
-    电池管理
-    充电管理
+    Battery management
+	Charge management
     """
 
     def __init__(self):
@@ -173,16 +173,16 @@ class ChargeManager(Abstract):
     def post_processor_after_initialization(self):
         if "KEY_CHARGE_FULL" in gpio_map:
             self.__charge_full_pin = Pin(gpio_map["KEY_CHARGE_FULL"][0], gpio_map["KEY_CHARGE_FULL"][1],
-                                         gpio_map["KEY_CHARGE_FULL"][2], 0)  # 正常是False 充满是True
+                                         gpio_map["KEY_CHARGE_FULL"][2], 0)  # Normal is False and full is True
         if "KEY_CHARGE_CHECK" in gpio_map:
             self.__charge_check_pin = Pin(gpio_map["KEY_CHARGE_CHECK"][0], gpio_map["KEY_CHARGE_CHECK"][1],
-                                          gpio_map["KEY_CHARGE_CHECK"][2], 0)  # 充电检测
+                                          gpio_map["KEY_CHARGE_CHECK"][2], 0)  # Charge detection
         subscribe("bat_value_play", self.bat_value_play)
         # _thread.start_new_thread(self.check_charge_state_task, ())
         _thread.start_new_thread(self.check_battery_v, ())
 
     def check_charge_state_task(self):
-        # 检查充电状态
+        # Check charging status
         while True:
             if not self.__charge_check_pin.read():
                 self.bat_charge_in()
@@ -228,18 +228,18 @@ class ChargeManager(Abstract):
 
                 if self.__bat_value > 1:
                     self.__tip_low_power = True
-                elif self.__bat_value == 1:  # 请充电
+                elif self.__bat_value == 1:  
                     if self.__tip_low_power:
                         self.__tip_low_power = False
                         publish("audio_file_play", "DEVICE_BAT_LOW")
                         publish("set_battery_signal", (0, 1))
-                if self.__bat_value == 0:  # 关机
+                if self.__bat_value == 0:  # device shutdown
                     publish("device_shutdown")
             utime.sleep_ms(100)
 
     @staticmethod
     def check_battery_o(mv_list):
-        # 检查电池电量
+        # Check the battery level
         # reduce max min value
         mv_list.remove(max(mv_list))
         mv_list.remove(min(mv_list))
@@ -275,7 +275,7 @@ class ChargeManager(Abstract):
 
 
 class LteNetManager(Abstract):
-    """LTE 网络管理"""
+    """LTE Network management"""
 
     def __init__(self):
         self.__data_call = dataCall
@@ -308,11 +308,11 @@ class LteNetManager(Abstract):
         self.net_error_audio_stop()
 
     def wait_connect(self, timeout):
-        """等待设备找网"""
+        """Wait for the device to find the network"""
         self.log.info("wait net -----------")
         stagecode, subcode = self.check_net.wait_network_connected(timeout)
         if stagecode == 3 and subcode == 1:
-            # 注网成功
+            # Net injection success
             publish("audio_file_play", "DEVICE_NET_OK")
             publish("set_4g_wifi", 0)
             self.log.info("module net success, run mqtt connect")
@@ -322,7 +322,7 @@ class LteNetManager(Abstract):
                 publish("audio_file_play", "DEVICE_SERVER_FAILED")
             self.net_error_audio_stop()
         else:
-            # 注网失败
+            # Net injection failure
             self.__net_error_mode = 1
             self.log.error("module net fail, wait try again")
             self.net_error_audio_start()
@@ -331,7 +331,7 @@ class LteNetManager(Abstract):
         self.__data_call.setCallback(self.net_state_cb)
 
     def net_fail_process(self):
-        # 注网失败，尝试Cfun后重新找网，若Cfun失败则模组重启
+        # If Cfun fails, try to find the network again. If Cfun fails, the module restarts
         state = net.setModemFun(0)
         if state == -1:
             self.log.error("cfun net mode error, device will restart.")
@@ -359,7 +359,7 @@ class LteNetManager(Abstract):
         self.__timer.stop()
 
     def net_state_cb(self, args):
-        """网络状态变化，会触发该回调函数"""
+        """The callback function is triggered when the network status changes"""
         nw_sta = args[1]
         if nw_sta == 1:
             publish("audio_file_play", "DEVICE_NET_OK")

@@ -1,10 +1,10 @@
 """
 公共功能
 
-Logger :日志输出
-Abstract:抽象父类
-Lock: 互斥锁
-ConfigStoreManager:文件系统管理
+Logger :log output
+Abstract:Abstract superclass
+Lock: Exclusive lock
+ConfigStoreManager: File system management
 """
 
 import _thread

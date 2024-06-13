@@ -16,25 +16,25 @@ class CloudManager(Abstract):
     """
 
     def __init__(self):
-        self.__server = " "   # mqtt服务器IP
+        self.__server = " "   # mqtt broker IP
         self.__port = 1883
         self.__mqtt_client = None
-        self.product_key = ''  # 产品识别码
-        self.product_secret = None  # 产品密钥
-        self.device_name = ''  # 设备（备注）名称 (SN)
-        self.device_secret = ''  # 设备密钥
-        self.client_id = ''  # 客户端ID (SN)
-        self.password = ""  # 密码
-        self.clean_session = True  # 客户端类型 (False: 持久客户端，True: 临时的)
-        self.keep_alive = 300  # 允许最长通讯时间（s）
-        self.sub_topic = ''  # 订阅地址
-        self.qos = 1  # 消息服务质量 0：发送者只发送一次消息，不进行重试 1：发送者最少发送一次消息，确保消息到达Broker
+        self.product_key = ''  # product key
+        self.product_secret = None  # product secret
+        self.device_name = ''  # device name (SN)
+        self.device_secret = ''  # device secret
+        self.client_id = ''  # client_id (SN)
+        self.password = ""  # passwd
+        self.clean_session = True  # Client type (False: persistent client, True: temporary)
+        self.keep_alive = 300  # Maximum communication time allowed (s)
+        self.sub_topic = ''  # Subscription address
+        self.qos = 1  # Message Quality of Service 0: The sender sends the message only once and does not retry 1: The sender sends the message at least once to ensure that the message reaches the Broker
         self.conn_flag = False
         self.start_mqtt_flag = False
-        # 订阅地址
+        # Subscription address
         self.sub = {}
         self.pub = {}
-        # 开机后收款笔数
+        # Number of payments made after starting up
         self.count = 0
         self.log = get_logger(__name__ + "." + self.__class__.__name__)
 
@@ -51,7 +51,6 @@ class CloudManager(Abstract):
 
     def __check_connect_param(self):
         if not self.product_key or not self.product_secret or not self.device_name:
-            # 序列号未写入&串号异常&获取sn异常
             publish("audio_file_play", "DEVICE_NOPARAM")
             return False
         else:
@@ -64,12 +63,11 @@ class CloudManager(Abstract):
     def __start_mqtt_connect(self, topic=None, data=None):
         if self.start_mqtt_flag and self.conn_flag:
             self.log.info("重新连接MQTT")
-            # 切换网络后重新连接mqtt云服务器
+            # Reconnect to mqtt cloud server after switching network
             try:
                 self.__disconnect()
             except Exception as e:
                 self.log.info("mqtt disconnect error, reason:  {}".format(e))
-            self.log.info("关闭之前的MQTT连接")
             utime.sleep(1)
         self.start_mqtt_flag = True
         return self.__connect()
@@ -93,7 +91,7 @@ class CloudManager(Abstract):
         if con_state != 0:
             self.log.warn("mqtt connect failed!")
             return False
-        self.__run()  # 持续监听消息
+        self.__run()  # Continuous message listening
         self.__mqtt_client.set_callback(self.callback)
         for key, values in self.sub.items():
             try:
@@ -106,11 +104,11 @@ class CloudManager(Abstract):
         return True
 
     def publish(self, topic, msg):
-        """mqtt 消息发布"""
+        """mqtt msg publish"""
         return self.__customer_pub(topic, msg)
 
     def callback(self, topic, msg):
-        """mqtt 消息回调"""
+        """mqtt msg callback"""
         return self.__customer_sub(topic, msg)
 
     def __customer_pub(self, topic, msg):
@@ -148,7 +146,7 @@ class CloudManager(Abstract):
             utime.sleep(1)
 
     def __run(self):
-        _thread.start_new_thread(self.__listen, ())  # 监听线程
+        _thread.start_new_thread(self.__listen, ())  # listening thread
 
     def __disconnect(self):
         self.__mqtt_client.disconnect()

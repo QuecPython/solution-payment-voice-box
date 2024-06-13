@@ -1,10 +1,10 @@
 # -*- coding: UTF-8 -*-
 """
-Audio TTS 功能
+Audio Func
 
-AUDIO_FILE_NAME :音频文件
-TTS_CONTENT:TTS播报内容
-AudioManager: audio 功能管理
+AUDIO_FILE_NAME :  audio file
+TTS_CONTENT: TTS play content
+AudioManager: audio func
 """
 
 import audio
@@ -16,8 +16,8 @@ from usr.const import gpio_map, audio_array
 
 class AudioManager(Abstract):
     """
-    音频文件播放
-    TTS 播报管理(拼接)
+    Audio file playback
+    TTS Broadcast Management (Splicing)
     """
 
     def __init__(self):
@@ -46,7 +46,7 @@ class AudioManager(Abstract):
         self.__audio_mode = publish("persistent_config_get", "audio_mode")
         if not self.__audio_volume:
             self.__audio_volume = 5
-        # 设置TTS音量
+        # set TTS volume
         self.__audio.setVolume(self.__volume_level.get(self.__audio_volume))
         subscribe("audio_file_play", self.audio_file_play)
         subscribe("number_play", self.number_play)
@@ -178,13 +178,13 @@ class AudioManager(Abstract):
         return self.__audio_volume
 
     def add_audio_volume(self, topic=None, vol_num=None):
-        """添加音量"""
+        """add volume"""
         vol_num = self.__audio_volume + 1
         self.__audio_volume = 5 if vol_num > 5 else vol_num
         self.__set_audio_volume(self.__volume_level.get(self.__audio_volume))
 
     def reduce_audio_volume(self, topic=None, vol_num=None):
-        """减少音量"""
+        """reduce volume"""
         vol_num = self.__audio_volume - 1
         self.__audio_volume = 1 if vol_num < 1 else vol_num
         self.__set_audio_volume(self.__volume_level.get(self.__audio_volume))

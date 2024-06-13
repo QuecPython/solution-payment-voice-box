@@ -54,7 +54,7 @@ class Event(object):
     PWK_PRESSED = "SHORT"
 
 
-# 开机按键事件
+# Powerbutton event
 class PowerFunKey(object):
     def __init__(self) -> None:
         self._pwk = PowerKey()
@@ -75,10 +75,10 @@ class PowerFunKey(object):
 
 class KeyManage(object):
     def __init__(self) -> None:
-        # 音量 “+” 按键 (单点亮灯、长按闪灯、双击读取LED状态)
-        # 音量 “-” 按键 (单点灭灯、长按闪灯、双击闪灯)
-        # 功能按键
-        # 开机按键事件
+        # Volume "+" button (single light, long press flashing light, double click to read LED status)
+        # Volume "-" button (single point off the light, long press the flashing light, double click the flashing light)
+        # Func button
+        # Power button
         self.Key_list = [Key(gpio_map.get("KEY_VOLUM_UP")[0], gpio_map.get("KEY_VOLUM_UP")[1],
                              gpio_map.get("KEY_VOLUM_UP")[2], gpio_map.get("KEY_VOLUM_UP")[3],
                              gpio_map.get("KEY_VOLUM_UP")[4], event_cb),
@@ -96,7 +96,6 @@ class KeyManage(object):
             i.enable()
 
 
-# 触发事件在此定义
 def event_cb(*args):
     k, event = args[0][0], args[0][1]
     if event == 1:
@@ -141,14 +140,14 @@ class MenuManager(Abstract):
 
     def menu_enter(self, topic=None, msg=None):
         if msg != self.menu:
-            # 先退出当前模式,执行退出动
+            # Exit the current mode and perform the exit action
             args = Menu_map.get(self.menu).get("action").get("quit")
             if args:
                 for i in range(len(args)):
                     publish(args[i][0], args[i][1])
-            # 切换标题，并将flag置为0
+            # Switch the title and set flag to 0
             self.menu = msg
-            # enter 执行进入动作
+            # Performs the enter action
             args = Menu_map.get(self.menu).get("action").get("enter")
             if args:
                 for i in range(len(args)):

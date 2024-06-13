@@ -6,18 +6,18 @@ from usr.common import Abstract
 
 
 class LcdManager(Abstract):
-    RGB_ENABLE = Pin(Pin.GPIO21, Pin.OUT, Pin.PULL_DISABLE, 1)  # 3.3v供电
-    RST = Pin(Pin.GPIO34, Pin.OUT, Pin.PULL_PU, 1)  # reset 默认低电平. 引脚64
-    LED = Pin(Pin.GPIO15, Pin.OUT, Pin.PULL_PU, 1)  # 背光使能, 高电平有效. 引脚62
-    CS = Pin(Pin.GPIO32, Pin.OUT, Pin.PULL_PU, 1)  # CS信号, 开机默认高.  引脚65
-    SCK = Pin(Pin.GPIO33, Pin.OUT, Pin.PULL_PU, 1)  # WR信号, 开机默认高.  引脚67
-    SDA = Pin(Pin.GPIO31, Pin.OUT, Pin.PULL_PU, 1)  # DATA信号, 开机默认高. 引脚66
+    RGB_ENABLE = Pin(Pin.GPIO21, Pin.OUT, Pin.PULL_DISABLE, 1)  # 3.3v 
+    RST = Pin(Pin.GPIO34, Pin.OUT, Pin.PULL_PU, 1)  # reset dafault low. pin 64
+    LED = Pin(Pin.GPIO15, Pin.OUT, Pin.PULL_PU, 1)  # Backlight enabled, high active. Pin 62
+    CS = Pin(Pin.GPIO32, Pin.OUT, Pin.PULL_PU, 1)  # CS signal, boot default high. Pin 65
+    SCK = Pin(Pin.GPIO33, Pin.OUT, Pin.PULL_PU, 1)  # WR signal, boot default high. Pin 67
+    SDA = Pin(Pin.GPIO31, Pin.OUT, Pin.PULL_PU, 1)  # DATA signal, the default value is high. Pin 66
 
     def __init__(self):
         self._close_process_flag = True
         self.icon_data = [[6, 13], [4, 13], [2, 13], [0, 13], [7, 13], [0, 12], [2, 12], [6, 12], [4, 12], [6, 0],
                           [6, 2]]
-        # 分别是金额区从左右 中间三个左-右 时间区左-右
+        # They are the amount area, the middle and time area
         self.number_data = [[[7, 11], [7, 10], [3, 10], [1, 10], [3, 11], [5, 11], [5, 10]],
                             [[7, 9], [7, 8], [3, 8], [1, 8], [3, 9], [5, 9], [5, 8]],
                             [[7, 7], [7, 6], [3, 6], [1, 6], [3, 7], [5, 7], [5, 6]],
@@ -87,7 +87,7 @@ class LcdManager(Abstract):
         self._write_cmd(0xAF)
 
     def lcd_sleep(self, topic=None, data=None):
-        """LCD休眠"""
+        """LCD sleep"""
         if data:
             self._write_cmd(0xAE)
             self._write_cmd(0xA5)
@@ -96,7 +96,7 @@ class LcdManager(Abstract):
             self._write_cmd(0xAF)
 
     def digit_flush(self):
-        """写入屏幕数据"""
+        """Write screen data"""
         self._write_cmd(0x10)
         self._write_cmd(0x00)
         self._write_cmd(0xb0)
@@ -104,7 +104,7 @@ class LcdManager(Abstract):
             self._write_data(i)
 
     def digit_flush_null(self):
-        """清屏"""
+        """clear"""
         self._write_cmd(0x10)
         self._write_cmd(0x00)
         self._write_cmd(0xb0)
@@ -114,8 +114,8 @@ class LcdManager(Abstract):
     def _set_battery_signal(self, topic=None, data=None):
         """
         data: (type, value)
-        type: 0: 设置电池电量, value: 有效值0-4
-        type: 1: 设置信号值, value: 有效值0-5
+		type: 0: Battery power. value: 0 to 4
+		type: 1: indicates the signal value. value: indicates the effective value 0-5
         """
         type_index = [[5, 9], [0, 5]][data[0]]
         for i, element in enumerate(self.signal_data[type_index[0]: type_index[1]]):
@@ -128,7 +128,7 @@ class LcdManager(Abstract):
         self.digit_flush()
 
     def _set_4g_wifi(self, topic=None, data=None):
-        """设置 0:4g & 1:wifi"""
+        """setting 0:4g & 1:wifi"""
         for i, element in enumerate(self.signal_data[9: 11]):
             if data == i:
                 self.lcd_ram[element[1]] += 2 ** element[0] if not self.lcd_ram[element[1]] & (2 ** element[0]) else 0
@@ -137,20 +137,20 @@ class LcdManager(Abstract):
         self.digit_flush()
 
     def _clear_buffer(self, data):
-        """清除时间、金额、笔数显示缓存"""
+        """Clear time, amount, and number of transactions display cache"""
         for i in self.number_data[data[0]: data[1]]:
             for j, element in enumerate(i):
                 self.lcd_ram[i[j][1]] -= 2 ** i[j][0] if self.lcd_ram[i[j][1]] & (2 ** i[j][0]) else 0
 
     def _set_time(self, topic=None, data=None):
         """
-        设置显示时间
-        data: 时间
+        Set display time
+		data: Time
         "11:20"
         """
         self._clear_buffer([9, 13])
         data = "%04d" % int(data.replace(":", ""))
-        self.lcd_ram[self.number_data[10][7][1]] += 2 ** self.number_data[10][7][0]    # 时间值中间的:使能
+        self.lcd_ram[self.number_data[10][7][1]] += 2 ** self.number_data[10][7][0]    # Time value in the middle : Enabled
         for i, value in enumerate(self.number_data[9: 13]):
             for j, element in enumerate(self.number.get(data[i])):
                 self.lcd_ram[value[j][1]] += 2 ** value[j][0] if element else 0
@@ -165,13 +165,13 @@ class LcdManager(Abstract):
 
     def _set_money(self, topic=None, data=None):
         """
-        设置显示金额:str
+        Set display amount:str
         eg: 11.20 1123.34 23.8
         """
         self._clear_buffer([0, 6])
         dot = data.find(".")
         if dot >= 0:
-            self.lcd_ram[self.number_data[6 - (len(data) - dot)][7][1]] += 2 ** self.number_data[6 - (len(data) - dot)][7][0]    # 使能小数点
+            self.lcd_ram[self.number_data[6 - (len(data) - dot)][7][1]] += 2 ** self.number_data[6 - (len(data) - dot)][7][0]    # Enable the decimal point
         data = data.replace(".", "")
         for i, value in enumerate(reversed(data)):
             for j, element in enumerate(self.number.get(value)):

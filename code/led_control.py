@@ -1,5 +1,5 @@
 """
-LED 三色指示灯管理
+LED Three color indicator management
 """
 
 import utime
@@ -18,7 +18,7 @@ class Light(Abstract):
         self.RGB_RED = 0x01
         self.RGB_GREEN = 0x02
         self.RGB_BLUE = 0x04
-        self.thread_id = None  # 闪烁线程ID
+        self.thread_id = None  # Flicker thread ID
         self.log = get_logger(__name__ + "." + self.__class__.__name__)
 
     def light_enable(self, topic=None, data=None):
@@ -51,7 +51,6 @@ class Light(Abstract):
         self.switch(None, 0)
 
     def post_processor_after_initialization(self):
-        """订阅此类所有的事件到 EventMesh中"""
         subscribe("light_enable", self.light_enable)
         subscribe("light_switch", self.switch)
         subscribe("light_blink", self.blink)

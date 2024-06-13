@@ -18,7 +18,7 @@ bat_table = [3400, 3550, 3605, 3650, 3705, 3755, 3805, 3855, 3875, 3905, 4015]
 # 100:4015
 
 
-# GPIO 配置表，value 参数集合，格式[GPIO脚, 模式, 上拉配置,]
+# GPIO setting，value Parameter set，[GPIO pin, model, Pull-up configuration,]
 gpio_map = {
     "KEY_POWER": [Pin.GPIO1, Pin.IN, Pin.PULL_DISABLE],
     "KEY_FUNC": [Pin.GPIO17, 1, 0, 2, 200],
@@ -29,14 +29,13 @@ gpio_map = {
     "KEY_SPEAK_EN": [Pin.GPIO12, Pin.OUT, Pin.PULL_DISABLE],
 }
 
-# 按键GPIO配置表
+# Press the GPIO configuration table
 key_map = {
     Pin.GPIO17: "KEY_FUNC",  # 69
     Pin.GPIO18: "KEY_VOLUM_UP",  # 70
     Pin.GPIO29: "KEY_VOLUM_DOWN",    # 57
     74: "KEY_POWER",   # 74
 }
-# 缺失音频文件
 audio_array = [("DEVICE_START", "huanyingshiyongyunyinxiang.mp3", "欢迎使用云音箱"),  # 开机语音
                ("DEVICE_FACTORY", None, "工厂模式"),  # 工厂模式
                ("DEVICE_NOSIM", "weijiancedaoSIMka.mp3", "未检测到SIM卡"),
