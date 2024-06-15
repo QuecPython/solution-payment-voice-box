@@ -57,7 +57,7 @@ Before you begin, ensure you have the following prerequisites:
    cd solution-payment-voice-box
    ```
 
-2. **Flash the Firmware**: Follow the [instructions](https://python.quectel.com/doc/Application_guide/dev-tools/QPYcom/qpycom-dw.html#Download-Firmware) to flash the firmware to the development board. **Ensure you select the appropriate firmware for your development board type.**
+2. **Flash the Firmware**: Follow the [instructions](https://python.quectel.com/doc/Application_guide/en/dev-tools/QPYcom/qpycom-dw.html#Download-Firmware) to flash the firmware to the development board. **Ensure you select the appropriate firmware for your development board type.**
 
 ### Running the Application
 
