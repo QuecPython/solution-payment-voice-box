@@ -1,5 +1,3 @@
-Sure, here is the translated markdown file:
-
 # QuecPython Payment Voice Box Solution
 
 [中文](readme_zh.md) | English
