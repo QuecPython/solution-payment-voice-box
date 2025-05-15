@@ -1,6 +1,6 @@
 # QuecPython Payment Voice Box Solution
 
-[中文](readme_zh.md) | English
+[中文](README.zh.md) | English
 
 Welcome to the Payment Voice Box Solution repository for QuecPython! This repository provides a comprehensive solution for developing payment voice box  applications using QuecPython.
 
